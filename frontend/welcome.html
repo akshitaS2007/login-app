@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="WelcomeContainer">
+        <div id="userIcon" onclick="toggleLogoutMenu()">👤</div>
+        <div id="logoutMenu" style="display:none">
+            <p>Are you sure you want to log out?</p>
+            <button id="yesButton">Yes</button>
+            <button id="noButton">No</button>
+        </div>
+        <div id="inactivityPopup" style="display:none">
+            <p>Are you there?</p>
+            <button id="stillHereButton">Yes, I'm here</button>
+        </div>
+
+        <h1 id="welcomeMessage"></h1>
+
+        <p>You have successfully logged in!</p>
+    </div>
+    <script>
+        async function WelcomePage()
+        {
+            const response = await fetch('/api/session');
+
+            const data = await response.json();
+
+            if(!data.loggedIn)
+            {
+            window.location.href = '/login.html';
+            return;
+            }
+        document.getElementById('welcomeMessage').textContent = 'Welcome ' + data.username + '!';
+        }
+
+        function toggleLogoutMenu() {
+            const menu = document.getElementById('logoutMenu');
+            if (menu.style.display === 'none') {
+                menu.style.display = 'block';
+            } else {
+                menu.style.display = 'none';
+            }
+        }
+
+        document.getElementById('yesButton').addEventListener('click', async function() {
+            await fetch('/api/logout');
+            window.location.href = '/login.html';
+        });
+
+        document.getElementById('noButton').addEventListener('click', function() {
+            document.getElementById('logoutMenu').style.display = 'none';
+        });
+
+        let inactivityTimer;
+        let logoutTimer;
+
+        const fiveMin = 5*1000;
+        const thirtyMin = 30*1000;
+
+        function startInactivityWatch() 
+        {
+            inactivityTimer = setTimeout(InactivityPopup, fiveMin);
+        }
+
+        function InactivityPopup()
+        {
+            document.getElementById('inactivityPopup').style.display = 'block';
+            logoutTimer = setTimeout(forceLogout, thirtyMin);
+        }
+
+        async function forceLogout()
+        {
+            await fetch('/api/logout');
+            window.location.href = '/login.html';
+        }
+
+        function resetActivity()
+        {
+            clearTimeout(inactivityTimer);
+            clearTimeout(logoutTimer);
+
+            document.getElementById('inactivityPopup').style.display = 'none';
+
+            startInactivityWatch();
+        }
+
+        document.addEventListener('mousemove', resetActivity);
+        document.getElementById('stillHereButton').addEventListener('click', resetActivity);
+
+        startInactivityWatch();
+        WelcomePage();
+    </script>
+</body>
+</html>
